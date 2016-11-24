@@ -2,66 +2,35 @@
 // Import fs module
 var fs = require('fs');
 
+var texttt = require('pdf-to-text');
+
+// count frequency module
+var  count = require('count-array-values');
+
+var textract = require('textract');
+
 // Target file name 
 var targetFile = "input.pdf";
 
-// Stopwords file name
-var stopwordsfile = "stopwords_tr.txt";
+textract.fromFileWithPath(targetFile, function( error, text) {
+	if (error) 
+		throw error;
+	var targetArray = text.replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
+	
+	// Stopwords file name
+	var stopwordsfile = "stopwords_tr.txt";
+    var stopwordsArray = fs.readFileSync(stopwordsfile).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
 
-
-// Read file into string array
-function readFile(filename){
-	var array = fs.readFileSync(filename).toString().replace(/[.,?!;()"'-]/g, " ").replace(/\s+/g, " ").toLowerCase().split(" ");
-	return array;
-}
-
-// Create target string array
-var targetArray = readFile(targetFile);
-
-
-// Create stopwords string array
-var stopwordsArray = readFile(stopwordsfile);
-
-
-function displayArray(array){
-	for(i in array) {
-    	console.log(array[i]+"\t");
-    }
-}
-
-
-// display array
- displayArray(targetArray);
-
-// calculate frequency and remove stopwords function
- function calculateFrequency(targetArray,stopwordsArray){
- 	var frequencyMap = new Map();
- 	for(i in targetArray) {
-    	if(!stopwordsArray.includes(targetArray[i])){
-     		if(frequencyMap.has(targetArray[i])){
-    			frequencyMap.set(targetArray[i],frequencyMap.get(targetArray[i])+1);
-    		}else{
-        		frequencyMap.set(targetArray[i],1);
-    		}
-		}else{
-			// write removed stopwords
-    		console.log("Stopword "+targetArray[i]);
-     	}
+	for (var i = 0; i <targetArray.length ; i++) {
+		  if(stopwordsArray.includes(targetArray[i])){
+		  	 console.log("Stopword: " +targetArray[i]);
+              targetArray.splice(i,1);
+		  }
 	}
-	return frequencyMap;
- }
-
-
-// calculate frequency and remove stopwords
-var frequencyMap = calculateFrequency(targetArray,stopwordsArray);
-
-//Display frequency function
-function displayFrequency(frequencyMap){
-	for (var [key, value] of frequencyMap.entries()) {
-		console.log(key + " = " + value);
+	targetArray = count(targetArray);
+    for (i of targetArray) {
+		console.log(i.value + " = " + i.count);
 	}
-}
-
-// Display frequency of each word
-displayFrequency(frequencyMap);
+	
+});
 
