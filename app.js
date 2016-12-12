@@ -2,6 +2,9 @@
 // Import fs module
 var fs = require('fs');
 
+// extract
+var extract = require('pdf-text-extract');
+
 // count frequency module
 var  count = require('count-array-values');
 
@@ -9,105 +12,137 @@ var path = require('path');
 var filePath = path.join(__dirname, 'input.pdf');
 
 // Stopword
-var stopwordsfile = "stopwords_tr.txt";
+var stopwordsfile = path.join(__dirname, 'stopword/stopwords_tr.txt');
 var stopwordsArray = fs.readFileSync(stopwordsfile).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
 
-var extract = require('pdf-text-extract');
+// read files
+var cogeleri1file = path.join(__dirname, 'cumleninogeleri/cumleninogeleri1.pdf');
+var cogeleri1Array = fs.readFileSync(cogeleri1file).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
 
-// initilize banner
-var banner = [];
-banner[1] = ["çobanın","telefonu","un","bilgisayarı","sıfat","umut"];
-banner[2] = ["sinema","yazın","filmini","gazete","çıktılar","dışarı"];
-banner[0] = ["koştum","yazın","değerli","adresini","gitti","çobanın"];
+var cogeleri2file = path.join(__dirname, 'cumleninogeleri/cumleninogeleri2.pdf');
+var cogeleri2Array = fs.readFileSync(cogeleri2file).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
 
-// pageArray
-var pageArray = [];
+var cogeleri3file = path.join(__dirname, 'cumleninogeleri/cumleninogeleri3.pdf');
+var cogeleri3Array = fs.readFileSync(cogeleri3file).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
 
-// extract pdf 
+var sozcukturleri1file = path.join(__dirname, 'sozcukturleri/sozcukturleri1.pdf');
+var sozcukturleri1Array = fs.readFileSync(sozcukturleri1file).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
+
+var sozcukturleri2file = path.join(__dirname, 'sozcukturleri/sozcukturleri2.pdf');
+var sozcukturleri2Array = fs.readFileSync(cogeleri3file).toString().replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
+
+// remove stopword
+function removeStopword(targetArray,stopwordsArray){
+	for (var i = 0; i <targetArray.length ; i++) {
+		if(stopwordsArray.some(o => o == targetArray[i])){
+			// remove stop word from text
+		  	//console.log(targetArray[i]+" removed");
+            targetArray.splice(i,1);
+		}else{
+			//console.log(targetArray[i]+" unremoved----------------------------------------------------------------------");
+		}
+	}
+}
+
+//console.log("cogeleri1Array");
+removeStopword(cogeleri1Array,stopwordsArray);
+// count frequency
+cogeleri1Array = count(cogeleri1Array);
+//console.log("cogeleri2file");
+removeStopword(cogeleri2Array,stopwordsArray);
+// count frequency
+cogeleri2Array = count(cogeleri2Array);
+//console.log("cogeleri3file");
+removeStopword(cogeleri3Array,stopwordsArray);
+// count frequency
+cogeleri3Array = count(cogeleri3Array);
+
+
+//console.log("sozcukturleri1Array");
+removeStopword(sozcukturleri1Array,stopwordsArray);
+// count frequency
+sozcukturleri1Array = count(sozcukturleri1Array);
+//console.log("sozcukturleri2Array");
+removeStopword(sozcukturleri2Array,stopwordsArray);
+// count frequency
+sozcukturleri2Array = count(sozcukturleri2Array);
+
+/*console.log("cogeleri1Array");
+console.log(cogeleri1Array);
+console.log("cogeleri2file");
+console.log(cogeleri2Array);
+console.log("cogeleri3file");
+console.log(cogeleri3Array);
+*/
+var  mergedArray1 = mergeFileArray(cogeleri1Array,cogeleri2Array);
+mergedArray1 = mergeFileArray(mergedArray1,cogeleri3Array);
+var  mergedArray2 = mergeFileArray(sozcukturleri1Array,sozcukturleri2Array);
+
+function mergeFileArray(FileArray1,FileArray2){
+    var  mergedArray = [];
+    //console.log("all elemnt of file1------------------------------------------------------");
+	for (i of FileArray1) {
+		mergedArray.push(i);
+		//console.log(i);
+	}   
+	for (j of FileArray2) {
+		if(!FileArray1.some(o => o.value === j.value)){
+			//console.log("different elemnt of file2--------------------------------------------------");
+			mergedArray.push(j);
+			//console.log(j);
+		}else{
+			//console.log("same elemnt of file2---------------------------------------------------------");
+		//	console.log(j);
+		//	console.log(FileArray1.find(o => o.value === j.value));
+		}
+	}    
+
+   return mergedArray;
+}
+
+/*
+console.log("mergedArray1");
+console.log(mergedArray1);
+
+
+console.log("mergedArray2");
+console.log(mergedArray2); */
+
+var topic = {
+	ders : "",
+	konu : ""
+}
+
+var mergedArray = [];
+
+topic["ders"] = "Türkçe";
+topic["konu"] = "Cümlenin Öğeleri";
+topic["features"] = mergedArray1;
+mergedArray.push(topic);
+
+topic = {};
+topic["ders"] = "Türkçe";
+topic["konu"] = "Sözcük Türleri";
+topic["features"] = mergedArray2;
+mergedArray.push(topic);
+
+for (i in mergedArray) {
+	console.log("Ders : "+mergedArray[i]["ders"]);
+	console.log("Konu : "+mergedArray[i]["konu"]);
+	console.log("features : ");
+	for(j of mergedArray[i]["features"]){
+        console.log(j);
+	}
+}
+
+//console.log(mergedArray);
+
+// sınıflandırma kısmı burda yapılacak
 extract(filePath, function (err, pages) {
 
 	if (err) {
     	console.log(err);
 		return;
 	}
-  
-	// page text divide word array
-	for(i in pages) {
-		// divide text word array
-    	var targetArray = pages[i].replace(/[.,?!;():"'-]/g, "").replace(/\s+/g, " ").toLowerCase().split(" "); 
-    	for (var i = 0; i <targetArray.length ; i++) {
-			if(stopwordsArray.includes(targetArray[i])){
-
-			// remove stop word from text
-		  	//	console.log(targetArray[i]+i);
-            	targetArray.splice(i,1);
-			}
-		}
-
-        // count frequency
-		targetArray = count(targetArray);
-
-       // add each word array to pagearray
-		pageArray.push(targetArray);
-
-	}
-
-    // display each page's word array and its frequency
-	for(i in pageArray) {
-		console.log("Content of page :" +i);
-		for (j of pageArray[i]) {
-			console.log(j.value + " = " + j.count);
-		}
-	}
-    
-    // page and count of its banners object 
-    var pagebanner = {page:0};
-    var countofBanner = [];
-	
-	// calculate banner of each page	     
-	for(i in pageArray) {
-		pagebanner = {page:0};
-		for (j in banner) {
-			var countt = 0;
-			for (k of banner[j]) {
-				if(pageArray[i].some(o => o.value === k)){
-					countt+= pageArray[i].find(o => o.value === k).count;
-				}
-			}
-            
-            // add banner property to pagebanner object
-			var str = "banner"+j;
-          	pagebanner[str] = countt;
-		}
-              
-		pagebanner["page"] = i;		
-
-		// add pagebanner object to array
-    	countofBanner[i] = pagebanner;
-	}         
-   
-   // display each page and count of each banners
-    console.log(countofBanner);
-
-   // find max banner of each page
-    for (i in countofBanner) {
-    	var bannername = "banner";
-    	var indexOfbanner = "";
-    	var max = 0;
-    	for (j in banner) {
-              
-    		if(countofBanner[i][bannername+j] > max){
-            	max = countofBanner[i][bannername+j];
-            	indexOfbanner = bannername+j;
-            	
-    		}
-             
-    	}
-
-       // display max banner of each page
-    	console.log("Page "+countofBanner[i]["page"]+" is related: " +indexOfbanner+" at "+countofBanner[i][indexOfbanner]+" point");
-    }
 
 });
-
-
